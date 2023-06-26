@@ -1,0 +1,184 @@
+Задача. Прием сообщение из приложения.
+
+Схема процесса
+Из мобильного приложения проходят сообщения в виде json файла. 
+Например:
+{
+ «user»: «user1242151»,
+ «date»: «2023-06-21»,
+ «screen»: «mainScreen»,
+ «event»: «tapped»
+}
+
+Django должен принимать такое сообщение и сохранять его в свою базу данных.
+
+Вот как можно эмулировать отправку события:
+
+curl -X POST -H "Content-Type: application/json" -d '{
+  "user": "user1242151",
+  "date": "2023-06-21",
+  "screen": "mainScreen",
+  "event": "tapped"
+}' http://192.168.250.112:8000/
+-----------------------------
+
+В папке Проекты/KidReeds создаем папку 1_BD_get_message
+Переходим в терминале в 1_BD_get_message
+cd /путь к папке 1_BD_get_message
+
+Внутри папки создадем виртуальное окружение
+python3.8 -m venv venv
+source venv/bin/activate
+python --version
+
+установим последнюю версию фреймворка Django
+pip install Django
+pip install --upgrade pip
+
+Создаем файл requirements.txt в котором будут храниться все зависимости
+pip freeze > requirements.txt
+Обновление зависимостей
+pip install -r requirements.txt
+
+Создаем проект
+django-admin startproject proj
+cd proj
+
+Создаем приложение
+python manage.py startapp pril
+
+Открываем в пайчарме проект proj
+Успеваем в открывшемся окошке поменять Пайтон 3.9 на 3.8
+Ждем переустановки внизу справа
+В терминале пайчарма переходим в папку проекта 1_BD_get_message
+cd ..
+Активируем Вирт окружение
+source venv/bin/activate
+Переходим в папку проекта proj
+cd proj
+Проверяем версию
+python --version
+
+INSTALLED_APPS = [
+    'pril'
+]
+
+Прописываем ДебагКонфигуратор
+Запуск проекта нажимаем жука
+runserver	OK
+---------------------------
+Работа с Моделью
+Приложение DB Brouser for SQLite установлено
+Создаем class MessageFront(models.Model)
+cd pril
+python3 manage.py makemigrations 
+python3 manage.py migrate
+-----------------------
+Создаем записи
+Создание через терминал
+cd proj
+python3 manage.py shell
+from pril.models import MessageFront
+a = MessageFront(user='user1', date='2023-06-26', screen='mainScreen', event='tapped')
+a.save()
+
+Упрощение 1	Создание записи 2, 3 через DB SQLite
+В терминале после python3 manage.py shell
+from django.db import connection
+connection.queries
+b = MessageFront(user='user2', date='2023-06-26', screen='mainScreen', event='tapped2')
+b.save()			создали запись 2
+connection.queries
+Получаем в терминале
+[{'sql': 'INSERT INTO "pril_messagefront" ("user", "date", "screen", "event") VALUES (\'user2\', \'2023-06-26\', \'mainScreen\', \'tapped2\') RETURNING "pril_messagefront"."id"', 'time': '0.010'}]
+Копируем
+INSERT INTO "pril_messagefront" ("user", "date", "screen", "event") VALUES (\'user2\', \'2023-06-26\', \'mainScreen\', \'tapped2\')
+Меняем копию
+INSERT INTO pril_messagefront ("user", "date", "screen", "event") VALUES ('user3', '2023-06-26', 'mainScreen', 'tapped3');
+Переходим в DB SQLite	вкладка SQL	копипаст 	нажимаем запись		видим 3 запись в DB SQLite	сохраняем изменения
+
+Упрощение 2 	использование ipython	Создание записи 5
+Устанавливаем в настройках/преференс пайчарма ipython	если не загрузится, тогда в терминале pip install ipython
+Выходим из терминала Ctrl + Z и заходим обратно
+python3 manage.py shell 
+Появились подсказки		
+In [1]: from pril.models import MessageFront
+In [2]: MessageFront(user='user4', date='2023-06-26', screen='mainScreen', event='tapped4').save()
+
+Упрощение 3 	Создание записи 4
+Модуль django-extensions	Для просмотра sql запросов при работе с ORM воспользуемся модулем django-extensions
+Выходим 	exit()
+устанавливаем (venv) (base) lemon@MacBook-Air-Lemon proj % pip install django-extensions
+
+	INSTALLED_APPS = (
+	    ...
+	    'django_extensions',
+)
+Заходим в терминале командой  
+python3 manage.py shell_plus --print-sql
+Стрелками верх вниз
+In [1]: from pril.models import MessageFront
+Создание записи 5
+In [2]: MessageFront(user='user5', date='2023-06-26', screen='mainScreen', event='tapped5').save()
+Видим сразу в терминале создание записи в модели бд
+INSERT INTO "pril_messagefront" ("user", "date", "screen", "event")
+VALUES ('user5', '2023-06-26', 'mainScreen', 'tapped5') RETURNING "pril_messagefront"."id"
+Видим в DB SQLite создание записи 5
+--------------------------------
+Выборка записей из таблицы
+
+Терминал
+python3 manage.py shell_plus --print-sql
+from pril.models import MessageFront
+MessageFront.objects.all()
+
+Чтобы изменить форму вывода 	маг метод str	см код
+Работают срезы 	и   обращения по атрибутам
+MessageFront.objects.all()[:2]
+a = MessageFront.objects.all()[4]
+a.event
+---------------------------
+Создаем в приложении pril папку templates
+В templates создаем папку pril
+В папке pril создаем файл base.html
+
+В папке pril создаем файл all_mesage.html
+В папке pril создаем файл urls.py
+Связываем родительский и дочерний urls.py
+Во Views создаем функцию вывода всех сообщений
+Данные берем из модели MessageFront в models
+В шаблонах отображаем в переменных атрибуты сообщений
+----------------------------
+Спрашиваем у ИИ как реализовать функцию записи сообщений в модель из json файлов.
+На курсах такого не было.
+Вставляем код ИИ в проект, во Views и urls
+Открываем Postman, добавляем название проекта, формируем запрос, отправляем json на 
+http://127.0.0.1:8000/save_json/
+Получаем "message": "Success"
+Проверяем в браузере и в DB SQLite, что сообщение действительно записалось
+---------------------------
+Выкладка в гитхаб 
+Терминал - в папке 1_BD_get_message  	
+git init .
+Создаем .gitignore
+nano .gitignore
+	временная.txt
+	Проект БД прием сообщений.txt
+	/venv
+Ctrl + o и Enter сохранениеç
+Ctrl + x и Y и Enter выход
+выйти из редактора - напечатайте :qa и нажмите enter.
+cat .gitignore
+
+ls .git
+git add .
+git commit -m '1 commit'
+
+git remote add origin git@github.com:lemon1964/my_django_blog.git
+git branch -M main
+git push -u origin main
+
+
+
+
+
